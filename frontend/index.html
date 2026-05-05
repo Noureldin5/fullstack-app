@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Task Manager — DevOps Lab</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #f0f2f5;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      padding: 40px 16px;
+    }
+
+    .container { width: 100%; max-width: 560px; }
+
+    h1 {
+      font-size: 1.6rem;
+      color: #1a1a2e;
+      margin-bottom: 4px;
+    }
+
+    .subtitle {
+      font-size: 0.85rem;
+      color: #888;
+      margin-bottom: 24px;
+    }
+
+    .card {
+      background: #fff;
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+      margin-bottom: 16px;
+    }
+
+    .add-form {
+      display: flex;
+      gap: 8px;
+    }
+
+    .add-form input {
+      flex: 1;
+      padding: 10px 14px;
+      border: 1.5px solid #ddd;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .add-form input:focus { border-color: #4f46e5; }
+
+    .btn {
+      padding: 10px 18px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 0.9rem;
+      font-weight: 600;
+      transition: opacity 0.2s;
+    }
+
+    .btn:hover { opacity: 0.85; }
+    .btn-primary { background: #4f46e5; color: #fff; }
+    .btn-danger  { background: #fee2e2; color: #dc2626; padding: 6px 12px; font-size: 0.8rem; }
+
+    .task-list { list-style: none; }
+
+    .task-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 0;
+      border-bottom: 1px solid #f0f0f0;
+      gap: 12px;
+    }
+
+    .task-item:last-child { border-bottom: none; }
+    .task-title { flex: 1; color: #333; font-size: 0.95rem; }
+
+    .status {
+      font-size: 0.8rem;
+      padding: 4px 10px;
+      border-radius: 20px;
+      margin-top: 12px;
+      display: none;
+    }
+
+    .status.error   { background: #fee2e2; color: #dc2626; display: block; }
+    .status.success { background: #dcfce7; color: #16a34a; display: block; }
+
+    .empty {
+      text-align: center;
+      color: #bbb;
+      padding: 24px 0;
+      font-size: 0.9rem;
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+  <h1>📋 Task Manager</h1>
+  <p class="subtitle">Student: YOUR_NAME &nbsp;|&nbsp; DevOps CI/CD Lab</p>
+
+  <div class="card">
+    <div class="add-form">
+      <input type="text" id="taskInput" placeholder="Enter a new task…" maxlength="200"/>
+      <button class="btn btn-primary" onclick="addTask()">Add</button>
+    </div>
+    <div id="status" class="status"></div>
+  </div>
+
+  <div class="card">
+    <ul class="task-list" id="taskList">
+      <li class="empty">Loading…</li>
+    </ul>
+  </div>
+</div>
+
+<script>
+  // API_URL is injected by the Dockerfile entrypoint at runtime.
+  // Falls back to same-origin /api for the DigitalOcean docker-compose setup.
+  const API = typeof __API_URL__ !== "undefined" ? __API_URL__ : "/api";
+
+  async function loadTasks() {
+    try {
+      const res  = await fetch(`${API}/data`);
+      const data = await res.json();
+      const list = document.getElementById("taskList");
+
+      if (!data.length) {
+        list.innerHTML = '<li class="empty">No tasks yet. Add one above!</li>';
+        return;
+      }
+
+      list.innerHTML = data.map(t => `
+        <li class="task-item">
+          <span class="task-title">${escHtml(t.title)}</span>
+          <button class="btn btn-danger" onclick="deleteTask(${t.id})">Delete</button>
+        </li>
+      `).join("");
+    } catch (e) {
+      showStatus("Cannot reach the backend API.", "error");
+    }
+  }
+
+  async function addTask() {
+    const input = document.getElementById("taskInput");
+    const title = input.value.trim();
+    if (!title) { showStatus("Please enter a task title.", "error"); return; }
+
+    try {
+      const res = await fetch(`${API}/data`, {
+        method:  "POST",
+        headers: { "Content-Type": "application/json" },
+        body:    JSON.stringify({ title }),
+      });
+      if (!res.ok) throw new Error();
+      input.value = "";
+      showStatus("Task added!", "success");
+      loadTasks();
+    } catch {
+      showStatus("Failed to add task.", "error");
+    }
+  }
+
+  async function deleteTask(id) {
+    try {
+      const res = await fetch(`${API}/data/${id}`, { method: "DELETE" });
+      if (!res.ok) throw new Error();
+      loadTasks();
+    } catch {
+      showStatus("Failed to delete task.", "error");
+    }
+  }
+
+  function showStatus(msg, type) {
+    const el = document.getElementById("status");
+    el.textContent = msg;
+    el.className = `status ${type}`;
+    setTimeout(() => { el.className = "status"; }, 3000);
+  }
+
+  function escHtml(str) {
+    return str.replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+  }
+
+  // Allow Enter key in input
+  document.getElementById("taskInput").addEventListener("keydown", e => {
+    if (e.key === "Enter") addTask();
+  });
+
+  loadTasks();
+</script>
+</body>
+</html>
