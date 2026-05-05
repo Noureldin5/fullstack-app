@@ -3,6 +3,9 @@ from unittest.mock import patch, MagicMock
 from app import app
 
 
+_UNSET = object()
+
+
 @pytest.fixture
 def client():
     app.config["TESTING"] = True
@@ -10,14 +13,14 @@ def client():
         yield client
 
 
-def make_mock_db(fetchall=None, fetchone=None):
+def make_mock_db(fetchall=None, fetchone=_UNSET):
     """Helper: return a mock connection/cursor pair."""
     mock_conn = MagicMock()
     mock_cur = MagicMock()
     mock_conn.cursor.return_value = mock_cur
     if fetchall is not None:
         mock_cur.fetchall.return_value = fetchall
-    if fetchone is not None:
+    if fetchone is not _UNSET:
         mock_cur.fetchone.return_value = fetchone
     return mock_conn
 
