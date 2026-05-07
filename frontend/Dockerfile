@@ -7,6 +7,9 @@ COPY index.html /usr/share/nginx/html/index.html
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
+# Copy the nginx template that will be populated at container start
+COPY nginx.conf.template /nginx.conf.template
+
 EXPOSE 80
 
 ENTRYPOINT ["/entrypoint.sh"]

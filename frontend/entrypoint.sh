@@ -12,4 +12,10 @@ else
   sed -i 's|typeof __API_URL__ !== "undefined" ? __API_URL__ : "/api"|"/api"|g' /usr/share/nginx/html/index.html
 fi
 
+# Ensure nginx listens on the port provided by the platform (Railway sets $PORT)
+PORT=${PORT:-80}
+if [ -f /nginx.conf.template ]; then
+  sed "s|__PORT__|${PORT}|g" /nginx.conf.template > /etc/nginx/nginx.conf
+fi
+
 exec nginx -g 'daemon off;'

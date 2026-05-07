@@ -78,6 +78,11 @@ def delete_data(item_id):
 
 
 if __name__ == "__main__":
-    init_db()
+    try:
+        init_db()
+    except Exception as e:
+        # Don't crash the container on startup if the database isn't configured yet.
+        # This helps deployments where DATABASE_URL may be injected later by the platform.
+        print("Warning: init_db failed:", e)
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port)
