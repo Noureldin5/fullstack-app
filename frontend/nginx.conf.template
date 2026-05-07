@@ -18,6 +18,12 @@ http {
       try_files $uri $uri/ /index.html;
     }
 
+    # Simple health endpoint for platforms
+    location /health {
+      add_header Content-Type application/json;
+      return 200 '{"status":"ok"}';
+    }
+
     # proxy /api to backend only if configured (used in docker-compose / nginx reverse proxy setups)
     location /api/ {
       return 404;

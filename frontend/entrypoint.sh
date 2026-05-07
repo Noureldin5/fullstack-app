@@ -17,5 +17,5 @@ PORT=${PORT:-80}
 if [ -f /nginx.conf.template ]; then
   sed "s|__PORT__|${PORT}|g" /nginx.conf.template > /etc/nginx/nginx.conf
 fi
-
+echo "[entrypoint] PORT=${PORT} VITE_API_URL=${API_URL:+(set)}"
 exec nginx -g 'daemon off;'
