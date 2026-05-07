@@ -35,6 +35,18 @@ def get_data():
     return jsonify([{"id": r[0], "title": r[1]} for r in rows])
 
 
+# Root — helpful message to avoid 404 at the service root
+@app.route("/", methods=["GET"])
+def index():
+    return jsonify({"message": "Task Manager API — use /api/data"}), 200
+
+
+# Healthcheck — useful for platforms and load balancers
+@app.route("/health", methods=["GET"])
+def health():
+    return jsonify({"status": "ok"}), 200
+
+
 # POST /api/data — add a task
 @app.route("/api/data", methods=["POST"])
 def add_data():
