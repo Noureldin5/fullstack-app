@@ -17,4 +17,4 @@ jobs:
           script: |
             cd /home/ubuntu/fullstack-app
             git pull
-            docker-compose up -d --build
+            docker compose up -d --build
